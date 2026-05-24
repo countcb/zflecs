@@ -31,7 +31,7 @@ pub const flags32_t = u32;
 pub const flags64_t = u64;
 
 pub fn flagsn_t(comptime bits: u16) type {
-    return std.meta.Int(.unsigned, bits);
+    return @Int(.unsigned, bits);
 }
 pub const termset_t = flagsn_t(FLECS_TERM_COUNT_MAX);
 
