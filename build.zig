@@ -671,7 +671,18 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    tests_module.addIncludePath(b.path("libs/flecs"));
+    tests_module.addImport("flecs_c", bk: {
+        const c = b.addTranslateC(.{
+            .root_source_file = b.path("libs/flecs/flecs.h"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        c.defineCMacro("FLECS_SANITIZE", if (optimize == .Debug) "1" else null);
+        c.defineCMacro("FLECS_USE_OS_ALLOC", "1");
+        c.defineCMacro("FLECS_NO_CPP", "1");
+        break :bk c.createModule();
+    });
     tests_module.linkLibrary(lib);
     tests_module.link_libc = true;
     tests_module.addOptions("build-options", options);

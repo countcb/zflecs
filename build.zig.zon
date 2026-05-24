@@ -2,7 +2,7 @@
     .name = .zflecs,
     .fingerprint = 0xb539547bfeeb25ec,
     .version = "0.3.0-dev",
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0-dev.332+4a65cc4ac",
     .paths = .{
         "build.zig",
         "build.zig.zon",

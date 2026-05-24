@@ -692,7 +692,7 @@ pub const query_t = extern struct {
 };
 
 pub fn array(comptime T: type, comptime len: comptime_int) [len]T {
-    return [_]T{.{}} ** len;
+    return @as([len]T, @splat(.{}));
 }
 
 pub const observer_t = extern struct {
@@ -1111,7 +1111,7 @@ pub const iter_t = extern struct {
 pub const query_desc_t = extern struct {
     _canary: i32 = 0,
 
-    terms: [FLECS_TERM_COUNT_MAX]term_t = [_]term_t{.{}} ** FLECS_TERM_COUNT_MAX,
+    terms: [FLECS_TERM_COUNT_MAX]term_t = @splat(.{}),
     expr: ?[*:0]const u8 = null,
 
     cache_kind: query_cache_kind_t = .QueryCacheDefault,
@@ -1142,7 +1142,7 @@ pub const observer_desc_t = extern struct {
 
     query: query_desc_t = .{},
 
-    events: [FLECS_EVENT_DESC_MAX]entity_t = [_]entity_t{0} ** FLECS_EVENT_DESC_MAX,
+    events: [FLECS_EVENT_DESC_MAX]entity_t = @splat(0),
 
     yield_existing: bool = false,
     global_observer: bool = false,
@@ -3046,7 +3046,7 @@ pub fn new_entity(world: *world_t, name: [*:0]const u8) entity_t {
 pub fn new_prefab(world: *world_t, name: [*:0]const u8) entity_t {
     return entity_init(world, &.{
         .name = name,
-        .add = @ptrCast(&[_]id_t{EcsPrefab} ++ [_]id_t{0} ** (FLECS_ID_DESC_MAX - 1)),
+        .add = @ptrCast(&[1]id_t{EcsPrefab} ++ @as([FLECS_ID_DESC_MAX - 1]id_t, @splat(0))),
     });
 }
 
