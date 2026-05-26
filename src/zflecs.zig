@@ -1096,7 +1096,7 @@ pub const iter_t = extern struct {
     priv_: iter_private_t,
 
     next: iter_next_action_t,
-    callback: *const fn (it: *iter_t) callconv(.c) void, // TODO: Compiler bug. Should be `iter_action_t`.
+    callback: iter_action_t,
     fini: iter_fini_action_t,
     chain_it: ?*iter_t,
 
