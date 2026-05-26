@@ -1444,7 +1444,7 @@ pub fn fini(world: *world_t) i32 {
 
     if (world_component_lookup.getPtr(world)) |component_type_lookup| {
         component_type_lookup.deinit(EcsAllocator.allocator);
-    }
+    } else @panic("Uninitialised world");
 
     if (num_worlds == 0) {
         world_component_lookup.deinit(EcsAllocator.allocator);
@@ -3148,7 +3148,7 @@ pub fn field(it: *iter_t, comptime T: type, index: i8) ?[]T {
 }
 
 pub inline fn id(world: *const world_t, comptime T: type) id_t {
-    const component_type_lookup = world_component_lookup.getPtr(world) orelse return 0;
+    const component_type_lookup = world_component_lookup.getPtr(world) orelse @panic("Uninitialised world");
     const type_id = component_type_lookup.get(perTypeGlobalId(T)) orelse return 0;
     return type_id;
 }
