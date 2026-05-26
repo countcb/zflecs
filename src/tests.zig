@@ -61,6 +61,9 @@ test "zflecs.entities.basics" {
     ecs.COMPONENT(world, Position);
     ecs.TAG(world, Walking);
 
+    try std.testing.expect(ecs.id(world, Position) == ecs.id(world, Position));
+    try std.testing.expect(ecs.id(world, Position) != ecs.id(world, Walking));
+
     const bob = ecs.set_name(world, 0, "Bob");
 
     _ = ecs.set(world, bob, Position, .{ .x = 10, .y = 20 });
@@ -98,7 +101,7 @@ test "zflecs.entities.basics" {
 
     {
         var desc = ecs.query_desc_t{};
-        desc.terms[0].id = ecs.id(Position);
+        desc.terms[0].id = ecs.id(world, Position);
         const query = try ecs.query_init(world, &desc);
         defer ecs.query_fini(query);
     }
@@ -106,8 +109,8 @@ test "zflecs.entities.basics" {
     {
         const query = try ecs.query_init(world, &.{
             .terms = [_]ecs.term_t{
-                .{ .id = ecs.id(Position) },
-                .{ .id = ecs.id(Walking) },
+                .{ .id = ecs.id(world, Position) },
+                .{ .id = ecs.id(world, Walking) },
             } ++ ecs.array(ecs.term_t, ecs.FLECS_TERM_COUNT_MAX - 2),
         });
         defer ecs.query_fini(query);
@@ -123,8 +126,8 @@ test "zflecs.entities.basics" {
     {
         const query = _: {
             var desc = ecs.query_desc_t{};
-            desc.terms[0].id = ecs.id(Position);
-            desc.terms[1].id = ecs.id(Walking);
+            desc.terms[0].id = ecs.id(world, Position);
+            desc.terms[1].id = ecs.id(world, Walking);
             break :_ try ecs.query_init(world, &desc);
         };
         defer ecs.query_fini(query);
@@ -133,8 +136,8 @@ test "zflecs.entities.basics" {
     {
         const query = try ecs.query_init(world, &.{
             .terms = [_]ecs.term_t{
-                .{ .id = ecs.id(Position) },
-                .{ .id = ecs.id(Walking) },
+                .{ .id = ecs.id(world, Position) },
+                .{ .id = ecs.id(world, Walking) },
             } ++ ecs.array(ecs.term_t, ecs.FLECS_TERM_COUNT_MAX - 2),
         });
         defer ecs.query_fini(query);
@@ -187,9 +190,9 @@ test "zflecs.basic" {
     ecs.COMPONENT(world, ?*const i8);
 
     {
-        const p0 = ecs.pair(ecs.id(u31), e0);
+        const p0 = ecs.pair(ecs.id(world, u31), e0);
         const p1 = ecs.pair(e0, e0);
-        const p2 = ecs.pair(ecs.OnUpdate, ecs.id(Direction));
+        const p2 = ecs.pair(ecs.OnUpdate, ecs.id(world, Direction));
         {
             const str = ecs.id_str(world, p0).?;
             defer ecs.os.free(str);
@@ -216,10 +219,10 @@ test "zflecs.basic" {
 
     const PrintIdHelper = struct {
         fn printId(in_world: *ecs.world_t, comptime T: type) void {
-            const id_str = ecs.id_str(in_world, ecs.id(T)).?;
+            const id_str = ecs.id_str(in_world, ecs.id(in_world, T)).?;
             defer ecs.os.free(id_str);
 
-            print("{s} id: {d}\n", .{ id_str, ecs.id(T) });
+            print("{s} id: {d}\n", .{ id_str, ecs.id(in_world, T) });
         }
     };
 
@@ -266,12 +269,12 @@ test "zflecs.basic" {
     print("entity str: {s}\n", .{e0_str});
 
     {
-        const str = ecs.type_str(world, ecs.get_type(world, ecs.id(Position))).?;
+        const str = ecs.type_str(world, ecs.get_type(world, ecs.id(world, Position))).?;
         defer ecs.os.free(str);
         print("{s}\n", .{str});
     }
     {
-        const str = ecs.id_str(world, ecs.id(Position)).?;
+        const str = ecs.id_str(world, ecs.id(world, Position)).?;
         defer ecs.os.free(str);
         print("{s}\n", .{str});
     }
@@ -308,15 +311,15 @@ test "zflecs.helloworld" {
 
     {
         _ = ecs.ADD_SYSTEM_WITH_FILTERS(world, "move system", ecs.OnUpdate, move, &.{
-            .{ .id = ecs.id(Position) },
-            .{ .id = ecs.id(Velocity) },
+            .{ .id = ecs.id(world, Position) },
+            .{ .id = ecs.id(world, Velocity) },
         });
     }
 
     const bob = ecs.new_entity(world, "Bob");
     _ = ecs.set(world, bob, Position, .{ .x = 0, .y = 0 });
     _ = ecs.set(world, bob, Velocity, .{ .x = 1, .y = 2 });
-    ecs.add_pair(world, bob, ecs.id(Eats), ecs.id(Apples));
+    ecs.add_pair(world, bob, ecs.id(world, Eats), ecs.id(world, Apples));
 
     _ = ecs.progress(world, 0);
     _ = ecs.progress(world, 0);
@@ -362,7 +365,7 @@ test "zflecs.helloworld_systemcomptime" {
     const bob = ecs.new_entity(world, "Bob");
     _ = ecs.set(world, bob, Position, .{ .x = 0, .y = 0 });
     _ = ecs.set(world, bob, Velocity, .{ .x = 1, .y = 2 });
-    ecs.add_pair(world, bob, ecs.id(Eats), ecs.id(Apples));
+    ecs.add_pair(world, bob, ecs.id(world, Eats), ecs.id(world, Apples));
 
     _ = ecs.progress(world, 0);
     _ = ecs.progress(world, 0);
@@ -403,11 +406,11 @@ test "zflecs.pairs.tag-tag" {
 
     const entity = ecs.new_entity(world, "Bob");
 
-    _ = ecs.add_pair(world, entity, ecs.id(Slowly), ecs.id(Walking));
-    try expect(ecs.has_pair(world, entity, ecs.id(Slowly), ecs.id(Walking)));
+    _ = ecs.add_pair(world, entity, ecs.id(world, Slowly), ecs.id(world, Walking));
+    try expect(ecs.has_pair(world, entity, ecs.id(world, Slowly), ecs.id(world, Walking)));
 
-    _ = ecs.remove_pair(world, entity, ecs.id(Slowly), ecs.id(Walking));
-    try expect(!ecs.has_pair(world, entity, ecs.id(Slowly), ecs.id(Walking)));
+    _ = ecs.remove_pair(world, entity, ecs.id(world, Slowly), ecs.id(world, Walking));
+    try expect(!ecs.has_pair(world, entity, ecs.id(world, Slowly), ecs.id(world, Walking)));
 }
 
 test "zflecs.pairs.component-tag" {
@@ -420,13 +423,13 @@ test "zflecs.pairs.component-tag" {
 
     const entity = ecs.new_entity(world, "Bob");
 
-    _ = ecs.set_pair(world, entity, ecs.id(Speed), ecs.id(Walking), Speed, 2);
-    try expect(ecs.has_pair(world, entity, ecs.id(Speed), ecs.id(Walking)));
-    try expectEqual(@as(u8, 2), ecs.get_pair(world, entity, ecs.id(Speed), ecs.id(Walking), Speed).?.*);
+    _ = ecs.set_pair(world, entity, ecs.id(world, Speed), ecs.id(world, Walking), Speed, 2);
+    try expect(ecs.has_pair(world, entity, ecs.id(world, Speed), ecs.id(world, Walking)));
+    try expectEqual(@as(u8, 2), ecs.get_pair(world, entity, ecs.id(world, Speed), ecs.id(world, Walking), Speed).?.*);
 
-    _ = ecs.remove_pair(world, entity, ecs.id(Speed), ecs.id(Walking));
-    try expect(!ecs.has_pair(world, entity, ecs.id(Speed), ecs.id(Walking)));
-    try expectEqual(@as(?*const u8, null), ecs.get_pair(world, entity, ecs.id(Speed), ecs.id(Walking), Speed));
+    _ = ecs.remove_pair(world, entity, ecs.id(world, Speed), ecs.id(world, Walking));
+    try expect(!ecs.has_pair(world, entity, ecs.id(world, Speed), ecs.id(world, Walking)));
+    try expectEqual(@as(?*const u8, null), ecs.get_pair(world, entity, ecs.id(world, Speed), ecs.id(world, Walking), Speed));
 }
 
 test "zflecs.pairs.delete-children" {
@@ -489,7 +492,7 @@ test "zflecs.struct-dtor-hook" {
                 }
             }
         }.chatSystem;
-        system_desc.query.terms[0] = .{ .id = ecs.id(Chat) };
+        system_desc.query.terms[0] = .{ .id = ecs.id(world, Chat) };
         _ = ecs.SYSTEM(world, "Chat system", &system_desc);
     }
 
